@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JKT48 Live Theater</title>
+  <style>
+    body{margin:0;font-family:Arial;background:#0b0b0b;color:#fff}
+    header{background:#111;padding:15px;text-align:center;border-bottom:2px solid #c00000}
+    header img{height:48px;margin-bottom:6px}
+    .container{max-width:1200px;margin:20px auto;padding:0 15px}
+    .status{text-align:center;margin-bottom:20px}
+    .badge{padding:6px 14px;border-radius:6px;font-weight:bold}
+    .live{background:#c00000}
+    .offline{background:#444}
+    .theater{display:flex;gap:15px;flex-wrap:wrap}
+
+    .video-wrapper{flex:2;min-width:320px;aspect-ratio:16/9;position:relative;background:#000;border-radius:10px;overflow:hidden;display:none}
+    .video-wrapper iframe{width:100%;height:100%;border:none}
+
+    .overlay-controls{
+      position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.35);cursor:pointer;transition:.3s
+    }
+    .overlay-controls.hidden{background:transparent}
+    .play-btn{
+      width:80px;height:80px;border-radius:50%;background:#c00000;
+      display:flex;align-items:center;justify-content:center;font-size:32px
+    }
+
+    .chat-wrapper{flex:1;min-width:300px;max-height:500px;background:#000;border-radius:10px;overflow:hidden;display:none}
+    .chat-wrapper iframe{width:100%;height:100%;border:none}
+
+    footer{text-align:center;color:#777;font-size:12px;margin:30px 0}
+    @media(max-width:768px){.theater{flex-direction:column}.chat-wrapper{max-height:300px}}
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="Logo" />
+  <h2>JKT48 Live Theater</h2>
+</header>
+
+<div class="container">
+
+  <div class="status">
+    <span id="statusBadge" class="badge offline">OFFLINE</span>
+    <p id="statusText">Live belum dimulai</p>
+  </div>
+
+  <div class="theater">
+    <div class="video-wrapper" id="videoBox">
+      <div id="player"></div>
+      <div class="overlay-controls" id="overlay">
+        <div class="play-btn" id="playIcon">▶</div>
+      </div>
+    </div>
+    <div class="chat-wrapper" id="chatBox"></div>
+  </div>
+
+</div>
+
+<footer>© 2025 Fan-made JKT48 Theater</footer>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  const API_KEY = "ISI_API_KEY_YOUTUBE";
+  const CHANNEL_ID = "CHANNEL_ID_KAMU";
+  const DOMAIN = location.hostname;
+  let player;
+  let isPlaying = false;
+
+  async function checkLive(){
+    const url=`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=live&type=video&key=${API_KEY}`;
+    try{
+      const res=await fetch(url);
+      const data=await res.json();
+      if(data.items&&data.items.length>0){
+        showLive(data.items[0].id.videoId)
+      }else showOffline();
+    }catch(e){showOffline()}
+  }
+
+  function showLive(videoId){
+    document.getElementById('statusBadge').textContent='LIVE';
+    document.getElementById('statusBadge').className='badge live';
+    document.getElementById('statusText').textContent='Sedang Live Streaming';
+    document.getElementById('videoBox').style.display='block';
+    document.getElementById('chatBox').style.display='block';
+
+    if(!player){
+      player=new YT.Player('player',{
+        videoId:videoId,
+        playerVars:{controls:0,modestbranding:1,rel:0,fs:0},
+        events:{onReady:onPlayerReady,onStateChange:onPlayerState}
+      })
+    }
+
+    document.getElementById('chatBox').innerHTML=
+      `<iframe src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${DOMAIN}"></iframe>`;
+  }
+
+  function showOffline(){
+    document.getElementById('statusBadge').textContent='OFFLINE';
+    document.getElementById('statusBadge').className='badge offline';
+    document.getElementById('statusText').textContent='Live belum dimulai';
+    document.getElementById('videoBox').style.display='none';
+    document.getElementById('chatBox').style.display='none';
+  }
+
+  function onPlayerReady(){
+    document.getElementById('overlay').onclick=togglePlay;
+  }
+
+  function onPlayerState(e){
+    if(e.data===YT.PlayerState.PLAYING){
+      isPlaying=true;
+      document.getElementById('playIcon').textContent='⏸';
+      document.getElementById('overlay').classList.add('hidden');
+    }else{
+      isPlaying=false;
+      document.getElementById('playIcon').textContent='▶';
+      document.getElementById('overlay').classList.remove('hidden');
+    }
+  }
+
+  function togglePlay(){
+    if(!player) return;
+    isPlaying ? player.pauseVideo() : player.playVideo();
+  }
+
+  checkLive();
+  setInterval(checkLive,30000);
+</script>
+
+</body>
+</html>
