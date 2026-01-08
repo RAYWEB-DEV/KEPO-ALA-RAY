@@ -69,7 +69,7 @@
   const CHANNEL_ID = "UC-LT-pgYo8e_DSfGW-RpdLQ";
   const DOMAIN = location.hostname;
   let player;
-  let isPlaying = false;
+  let isPlaying = true;
 
   async function checkLive(){
     const url=`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&eventType=live&type=video&key=${API_KEY}`;
